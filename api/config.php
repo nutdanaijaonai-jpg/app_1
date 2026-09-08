@@ -6,10 +6,11 @@
  */
 
 // ---------------------------------------------------------------- settings
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_NAME', getenv('DB_NAME') ?: 'lane3');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_HOST', getenv('DB_HOST') ?: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
+define('DB_PORT', getenv('DB_PORT') ?: '4000');
+define('DB_NAME', getenv('DB_NAME') ?: 'test');
+define('DB_USER', getenv('DB_USER') ?: '24qYLaoH4LPoqGC.root');
+define('DB_PASS', getenv('DB_PASS') ?: 'GP13sJY9jTY6IAxo');
 define('JWT_SECRET', getenv('JWT_SECRET') ?: 'lane3-dev-secret-change-me');
 
 // ---------------------------------------------------------------- CORS & Chrome Private Network Access
@@ -27,11 +28,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // ---------------------------------------------------------------- DB (PDO)
 try {
+    $pdoOptions = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ];
+    $sslCa = __DIR__ . '/../isrgrootx1.pem';
+    if (file_exists($sslCa)) {
+        $pdoOptions[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+    }
+
     $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4',
         DB_USER,
         DB_PASS,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
+        $pdoOptions
     );
 } catch (PDOException $e) {
     json_response(['error' => 'เชื่อมต่อฐานข้อมูลไม่ได้ — ตรวจสอบค่าตั้งค่าใน config.php: ' . $e->getMessage()], 500);

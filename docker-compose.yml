@@ -1,4 +1,4 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   # PHP + Apache Web Server (Backend API & Admin Panel)
@@ -17,7 +17,7 @@ services:
       - DB_PASS=lane3_password
       - JWT_SECRET=lane3-super-secret-jwt-key
     volumes:
-      - ./:/var/www/html/backend-php
+      - ./:/var/www/html
     depends_on:
       db:
         condition: service_healthy
