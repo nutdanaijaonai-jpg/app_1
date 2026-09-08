@@ -4,12 +4,15 @@ FROM php:8.2-apache
 RUN docker-php-ext-install pdo pdo_mysql mysqli \
     && a2enmod rewrite headers
 
-# Configure Apache directory permissions and allow .htaccess
+# Configure Apache directory permissions, proxy redirects and allow .htaccess
 RUN echo '<Directory /var/www/html>' >> /etc/apache2/apache2.conf \
     && echo '    Options -Indexes +FollowSymLinks' >> /etc/apache2/apache2.conf \
     && echo '    AllowOverride All' >> /etc/apache2/apache2.conf \
     && echo '    Require all granted' >> /etc/apache2/apache2.conf \
-    && echo '</Directory>' >> /etc/apache2/apache2.conf
+    && echo '</Directory>' >> /etc/apache2/apache2.conf \
+    && echo 'ServerName localhost' >> /etc/apache2/apache2.conf \
+    && echo 'UseCanonicalName Off' >> /etc/apache2/apache2.conf \
+    && echo 'UseCanonicalPhysicalPort Off' >> /etc/apache2/apache2.conf
 
 # Set working directory
 WORKDIR /var/www/html
