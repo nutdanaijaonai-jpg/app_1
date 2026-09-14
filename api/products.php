@@ -76,10 +76,23 @@ if ($method === 'PUT') {
 if ($method === 'DELETE') {
     require_admin();
     if (!$id) json_response(['error' => 'ต้องระบุ id สินค้า'], 400);
-    $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
-    $stmt->execute([$id]);
-    http_response_code(204);
-    exit;
+    try {
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare('DELETE FROM order_items WHERE product_id = ?');
+        $stmt->execute([$id]);
+
+        $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
+        $stmt->execute([$id]);
+        $pdo->commit();
+
+        http_response_code(204);
+        exit;
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        json_response(['error' => 'เกิดข้อผิดพลาดในการลบสินค้า: ' . $e->getMessage()], 500);
+    }
 }
 
 json_response(['error' => 'Method not allowed'], 405);

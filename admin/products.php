@@ -12,10 +12,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['_action'] ?? '';
 
     if ($action === 'delete') {
-        $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
-        $stmt->execute([(int)$_POST['id']]);
-        header('Location: products.php?msg=deleted');
-        exit;
+        $productId = (int)$_POST['id'];
+        try {
+            $pdo->beginTransaction();
+            // ลบรายการสินค้าที่เกี่ยวข้องใน order_items ก่อน เพื่อไม่ให้ติด foreign key constraint
+            $stmt = $pdo->prepare('DELETE FROM order_items WHERE product_id = ?');
+            $stmt->execute([$productId]);
+
+            // ลบตัวสินค้าออกจาก products
+            $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
+            $stmt->execute([$productId]);
+            $pdo->commit();
+
+            header('Location: products.php?msg=deleted');
+            exit;
+        } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            header('Location: products.php?err=delete_failed');
+            exit;
+        }
     }
 
     $name = trim($_POST['name'] ?? '');
@@ -55,6 +72,14 @@ $products = $pdo->query('SELECT * FROM products ORDER BY id DESC')->fetchAll();
 
 $messages = ['created' => 'เพิ่มสินค้าแล้ว', 'updated' => 'อัปเดตสินค้าแล้ว', 'deleted' => 'ลบสินค้าแล้ว'];
 $flash = $messages[$_GET['msg'] ?? ''] ?? null;
+
+$errorMessages = [
+    'has_orders' => 'ไม่สามารถลบสินค้านี้ได้ เนื่องจากมีประวัติคำสั่งซื้อที่อ้างอิงถึงสินค้านี้อยู่ (แนะนำให้ปรับจำนวนสต็อกเป็น 0 แทนการลบ)',
+    'delete_failed' => 'เกิดข้อผิดพลาดในการลบสินค้า กรุณาลองใหม่อีกครั้ง',
+];
+if (isset($_GET['err']) && isset($errorMessages[$_GET['err']])) {
+    $error = $errorMessages[$_GET['err']];
+}
 
 render_header('จัดการสินค้า', 'products.php', $admin);
 ?>
